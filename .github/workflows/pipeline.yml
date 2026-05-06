@@ -1,0 +1,26 @@
+name: CI 
+
+on: 
+  push:
+    branches: ["main"]
+
+jobs:
+  build:
+    name: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: checkout do codigo
+        uses: actions/checkout@v4
+
+      - name: login no docker hub
+        uses: docker/login-action@v3
+        with: 
+          username: ${{ secrets.DOCKER_USER }}
+          password: ${{ secrets.DOCKER_PASS }}
+
+      - name: build com docker compose
+        run: docker compose build
+
+      - name: push com docker compose
+        run: docker compose push
