@@ -1,24 +1,31 @@
-deploy:
-  needs: build # Ou o nome do seu job de build/test
-  runs-on: ubuntu-latest
+name: Deploy
 
-  steps:
-    - name: Deploy via SSH (Appleboy)
-      uses: appleboy/ssh-action@master
-      with:
-        host: ${{ secrets.SSH_HOST }}
-        username: ${{ secrets.SSH_USER }}
-        key: ${{ secrets.SSH_KEY }}
-        script: |
-          # Allan
-          cd ~
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
 
-          # Se o projeto não existe, clona. Se existe, pull.
-          if [ ! -d "allan-app" ]; then
-            git clone https://github.com/${{ github.repository }} allan-app
-          fi
+jobs:
+  deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
 
-          cd allan-app
-          git pull origin main
-          docker compose pull
-          docker compose up -d
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            cd ~
+
+            # Se o projeto nao existe, clona. Se existe, atualiza.
+            if [ ! -d "allan-app" ]; then
+              git clone https://github.com/${{ github.repository }} allan-app
+            fi
+
+            cd allan-app
+            git pull origin main
+            docker compose pull
+            docker compose up -d
