@@ -8,18 +8,33 @@ services:
       POSTGRES_DB: todolist
     volumes:
       - allan_aleson_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fatec_user -d todolist"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   api:
     build: ./backend
     container_name: allan_aleson_api
     restart: always
+    ports:
+      - "3000:3000"
     environment:
       DB_HOST: db
       DB_USER: fatec_user
       DB_PASSWORD: fatec_password
       DB_NAME: todolist
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
 
   web:
     build: ./frontend
@@ -27,7 +42,14 @@ services:
     ports:
       - "8011:80"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/ >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
 volumes:
   allan_aleson_data:
